@@ -1,17 +1,9 @@
--- Create a database named FASTMoney if It does not already exist
-USE master;
-GO
-
-IF NOT EXISTS (SELECT name
-FROM sys.databases
-WHERE name = 'FASTMoney')
+-- Check that current DB is not master DB
+IF DB_NAME() = 'master'
 BEGIN
-    CREATE DATABASE FASTMoney;
+    RAISERROR('This script should not be run on the master database', 16, 1);
+    RETURN;
 END
-GO
-
-USE FASTMoney;
-GO
 
 -- Create Migration Schema if it does not already exist
 IF NOT EXISTS (SELECT *

@@ -1,0 +1,1513 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "FASTMoney API",
+      "version": "1.0.0",
+      "description": "API documentation for FASTMoney: Finance Management in your Pocket. Bill splits are treated as transactions with an optional 'amounts' array that defines how the transaction is split among accounts/users."
+    },
+    "servers": [
+      {
+        "url": "https://fast-money-alpha.vercel.app",
+        "description": "Production Server"
+      },
+      {
+        "url": "https://fast-money-staging.vercel.app",
+        "description": "Staging Server"
+      },
+      {
+        "url": "https://fast-money-dev.vercel.app",
+        "description": "Development Server"
+      },
+      {
+        "url": "http://localhost:3000",
+        "description": "Local Server"
+      }
+    ],
+    "paths": {
+      "/api": {
+        "get": {
+          "tags": [
+            "General"
+          ],
+          "summary": "API Health Check",
+          "description": "Check if the API is running.",
+          "responses": {
+            "200": {
+              "description": "API is running",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "API is running"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/auth/register": {
+        "post": {
+          "tags": [
+            "Authentication"
+          ],
+          "summary": "User Registration",
+          "description": "Create a new user account.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserRegister"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "User registered successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Username or email already exists",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/auth/login": {
+        "post": {
+          "tags": [
+            "Authentication"
+          ],
+          "summary": "User Login",
+          "description": "Authenticate a user and issue a JWT.",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserLogin"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Login successful",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  }
+                }
+              }
+            },
+            "401": {
+              "description": "Invalid credentials",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/auth/change-password": {
+        "put": {
+          "tags": [
+            "Authentication"
+          ],
+          "summary": "Change Password",
+          "description": "Allows an authenticated user to change their password.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangePassword"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Password updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "example": "Password has been updated successfully"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Current password is incorrect",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/accounts": {
+        "get": {
+          "tags": [
+            "Account Management"
+          ],
+          "summary": "Get User Accounts",
+          "description": "Retrieve a list of accounts belonging to the authenticated user.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of accounts",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Account"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "Account Management"
+          ],
+          "summary": "Create New Account",
+          "description": "Create a new financial account.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewAccount"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Account created successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AccountResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/accounts/{accountId}": {
+        "put": {
+          "tags": [
+            "Account Management"
+          ],
+          "summary": "Edit Account",
+          "description": "Update an account’s details.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "accountId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the account to update"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditAccount"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Account updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AccountResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Account not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "delete": {
+          "tags": [
+            "Account Management"
+          ],
+          "summary": "Delete Account",
+          "description": "Delete an existing account if no pending transactions exist.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "accountId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the account to delete"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Account deleted successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "example": "Account deleted successfully"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Account not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Account cannot be deleted due to pending transactions",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/transactions": {
+        "get": {
+          "tags": [
+            "Transaction Management"
+          ],
+          "summary": "Get Transactions",
+          "description": "Retrieve a list of transactions for the authenticated user. Filter by page, date range, category, or tag. Bill splits are transactions that include multiple values in the 'amounts' array.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "page",
+              "in": "query",
+              "schema": {
+                "type": "integer",
+                "default": 1
+              }
+            },
+            {
+              "name": "limit",
+              "in": "query",
+              "schema": {
+                "type": "integer",
+                "default": 20
+              }
+            },
+            {
+              "name": "startDate",
+              "in": "query",
+              "schema": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            {
+              "name": "endDate",
+              "in": "query",
+              "schema": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            {
+              "name": "category",
+              "in": "query",
+              "schema": {
+                "type": "string"
+              }
+            },
+            {
+              "name": "tag",
+              "in": "query",
+              "schema": {
+                "type": "string"
+              },
+              "description": "Filter transactions by tag"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of transactions",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TransactionList"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "Transaction Management"
+          ],
+          "summary": "Create Transaction",
+          "description": "Add a new transaction. For bill splits, include multiple values in 'amounts' array with split details. (Sum of amountToPay should equal amountPaid)",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewTransaction"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Transaction recorded successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/transactions/{transactionId}": {
+        "put": {
+          "tags": [
+            "Transaction Management"
+          ],
+          "summary": "Edit Transaction",
+          "description": "Edit an existing transaction's details. Bill splits can be updated by modifying the 'amounts' array.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "transactionId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the transaction to update"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditTransaction"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Transaction updated successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TransactionResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Transaction not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/transactions/{transactionId}/tags": {
+        "get": {
+          "tags": [
+            "Transaction Tags"
+          ],
+          "summary": "Get Transaction Tags",
+          "description": "Retrieve all tags associated with a specific transaction.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "transactionId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the transaction"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of transaction tags",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/TransactionTag"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "Transaction Tags"
+          ],
+          "summary": "Add Transaction Tag",
+          "description": "Add a new tag to a transaction.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "transactionId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the transaction"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NewTransactionTag"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Tag added successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/TransactionTag"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/transactions/{transactionId}/tags/{tagId}": {
+        "delete": {
+          "tags": [
+            "Transaction Tags"
+          ],
+          "summary": "Remove Transaction Tag",
+          "description": "Remove a tag from a transaction.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "transactionId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the transaction"
+            },
+            {
+              "name": "tagId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the tag to remove"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Tag removed successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "example": "Tag removed successfully"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Tag not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/friends": {
+        "get": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Get Friend List",
+          "description": "Retrieve the friend list of the authenticated user.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of friends",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Friend"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/friends/accounts": {
+        "get": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Get Friends' Accounts",
+          "description": "Retrieve the accounts of all the authenticated user's friends.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of friends with their accounts",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/FriendAccounts"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/friends/{friendId}/accounts": {
+        "get": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Get a Specific Friend's Accounts",
+          "description": "Retrieve the accounts of a specific friend identified by their user ID.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "friendId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "User ID of the friend"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Friend's accounts",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/FriendAccounts"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Friend or accounts not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/friend-requests": {
+        "get": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Get All Friend Requests",
+          "description": "Retrieve all pending friend requests for the authenticated user.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "List of friend requests",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/FriendRequest"
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "No friend requests found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "post": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Send Friend Request",
+          "description": "Send a friend request to another user.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequestSend"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "Friend request sent successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "example": "Friend request sent successfully"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/friend-requests/{friendId}": {
+        "put": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Respond to Friend Request",
+          "description": "Accept or reject a friend request.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "friendId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "ID of the user who sent the friend request"
+            }
+          ],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequestResponse"
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Friend request responded to successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "example": "Friend request accepted"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid action",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/friends/{friendId}": {
+        "delete": {
+          "tags": [
+            "Friend Management"
+          ],
+          "summary": "Remove Friend",
+          "description": "Remove an existing friend from the authenticated user's friend list.",
+          "security": [
+            {
+              "bearerAuth": []
+            }
+          ],
+          "parameters": [
+            {
+              "name": "friendId",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "integer"
+              },
+              "description": "User ID of the friend to be removed"
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "Friend removed successfully",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "message": {
+                        "type": "string",
+                        "example": "Friend removed successfully"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Friend not found",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "UserRegister": {
+          "type": "object",
+          "properties": {
+            "username": {
+              "type": "string",
+              "example": "john_doe"
+            },
+            "email": {
+              "type": "string",
+              "example": "john@example.com"
+            },
+            "password": {
+              "type": "string",
+              "example": "StrongPassword!123"
+            }
+          },
+          "required": [
+            "username",
+            "email",
+            "password"
+          ]
+        },
+        "UserLogin": {
+          "type": "object",
+          "properties": {
+            "usernameOrEmail": {
+              "type": "string",
+              "example": "john_doe"
+            },
+            "password": {
+              "type": "string",
+              "example": "StrongPassword!123"
+            }
+          },
+          "required": [
+            "usernameOrEmail",
+            "password"
+          ]
+        },
+        "UserResponse": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "example": "User registered successfully"
+            },
+            "user": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "example": 1
+                },
+                "username": {
+                  "type": "string",
+                  "example": "john_doe"
+                },
+                "email": {
+                  "type": "string",
+                  "example": "john@example.com"
+                },
+                "createdOn": {
+                  "type": "string",
+                  "format": "date-time",
+                  "example": "2025-03-29T10:00:00+05:00"
+                }
+              }
+            },
+            "token": {
+              "type": "string",
+              "example": "<JWT_TOKEN>"
+            }
+          }
+        },
+        "ChangePassword": {
+          "type": "object",
+          "properties": {
+            "currentPassword": {
+              "type": "string",
+              "example": "StrongPassword!123"
+            },
+            "newPassword": {
+              "type": "string",
+              "example": "NewStrongPassword!456"
+            }
+          },
+          "required": [
+            "currentPassword",
+            "newPassword"
+          ]
+        },
+        "Account": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 10
+            },
+            "name": {
+              "type": "string",
+              "example": "Checking"
+            },
+            "balance": {
+              "type": "number",
+              "format": "double",
+              "example": 2500.75
+            },
+            "createdOn": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-03-29T10:05:00+05:00"
+            }
+          }
+        },
+        "NewAccount": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "example": "Emergency Fund"
+            },
+            "initialBalance": {
+              "type": "number",
+              "format": "double",
+              "example": 500.00
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        "EditAccount": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "example": "Updated Account Name"
+            }
+          },
+          "required": [
+            "name"
+          ]
+        },
+        "AccountResponse": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "example": "Account created successfully"
+            },
+            "account": {
+              "$ref": "#/components/schemas/Account"
+            }
+          }
+        },
+        "Transaction": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 100
+            },
+            "category": {
+              "type": "string",
+              "example": "Food"
+            },
+            "isIncome": {
+              "type": "boolean",
+              "example": false
+            },
+            "includeInReports": {
+              "type": "boolean",
+              "example": true
+            },
+            "description": {
+              "type": "string",
+              "example": "Lunch at cafe"
+            },
+            "notes": {
+              "type": "string",
+              "nullable": true,
+              "example": "With friends at downtown"
+            },
+            "createdOn": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-03-29T12:00:00+05:00"
+            },
+            "amounts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/TransactionAmount"
+              }
+            }
+          }
+        },
+        "NewTransaction": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "example": "Food"
+            },
+            "isIncome": {
+              "type": "boolean",
+              "example": false
+            },
+            "includeInReports": {
+              "type": "boolean",
+              "example": true
+            },
+            "description": {
+              "type": "string",
+              "example": "Lunch at cafe"
+            },
+            "notes": {
+              "type": "string",
+              "example": "With friends at downtown"
+            },
+            "amounts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/NewTransactionAmount"
+              }
+            }
+          },
+          "required": [
+            "category",
+            "isIncome",
+            "includeInReports",
+            "description",
+            "amounts"
+          ]
+        },
+        "TransactionResponse": {
+          "type": "object",
+          "properties": {
+            "message": {
+              "type": "string",
+              "example": "Transaction recorded successfully"
+            },
+            "transaction": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          }
+        },
+        "TransactionList": {
+          "type": "object",
+          "properties": {
+            "page": {
+              "type": "integer",
+              "example": 1
+            },
+            "limit": {
+              "type": "integer",
+              "example": 20
+            },
+            "total": {
+              "type": "integer",
+              "example": 42
+            },
+            "transactions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Transaction"
+              }
+            }
+          }
+        },
+        "EditTransaction": {
+          "type": "object",
+          "properties": {
+            "category": {
+              "type": "string",
+              "example": "Updated Category"
+            },
+            "isIncome": {
+              "type": "boolean",
+              "example": false
+            },
+            "description": {
+              "type": "string",
+              "example": "Updated description"
+            },
+            "notes": {
+              "type": "string",
+              "example": "Updated notes"
+            },
+            "amounts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/EditTransactionAmount"
+              },
+              "description": "Optional updated array of transaction amounts."
+            }
+          },
+          "required": [
+            "category",
+            "isIncome"
+          ]
+        },
+        "TransactionTag": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 10
+            },
+            "transactionId": {
+              "type": "integer",
+              "example": 100
+            },
+            "tag": {
+              "type": "string",
+              "example": "Restaurant"
+            },
+            "createdOn": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-03-29T12:05:00+05:00"
+            }
+          }
+        },
+        "NewTransactionTag": {
+          "type": "object",
+          "properties": {
+            "tag": {
+              "type": "string",
+              "example": "Restaurant"
+            }
+          },
+          "required": [
+            "tag"
+          ]
+        },
+        "TransactionAmount": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 50
+            },
+            "transactionId": {
+              "type": "integer",
+              "example": 100
+            },
+            "accountId": {
+              "type": "integer",
+              "nullable": true,
+              "example": 20
+            },
+            "accountName": {
+              "type": "string",
+              "nullable": true,
+              "example": "Alice Checking"
+            },
+            "amountToPay": {
+              "type": "number",
+              "format": "double",
+              "example": 100.00
+            },
+            "amountPaid": {
+              "type": "number",
+              "format": "double",
+              "example": 0.00,
+              "description": "Set this to the full amount to mark as paid."
+            },
+            "createdOn": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-03-29T12:05:00+05:00"
+            }
+          }
+        },
+        "NewTransactionAmount": {
+          "type": "object",
+          "properties": {
+            "accountId": {
+              "type": "integer",
+              "nullable": true,
+              "example": 20
+            },
+            "accountName": {
+              "type": "string",
+              "nullable": true,
+              "example": "Alice Checking"
+            },
+            "amountToPay": {
+              "type": "number",
+              "format": "double",
+              "example": 100.00
+            },
+            "amountPaid": {
+              "type": "number",
+              "format": "double",
+              "example": 0.00
+            }
+          },
+          "required": [
+            "amountToPay",
+            "amountPaid"
+          ]
+        },
+        "EditTransactionAmount": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "integer",
+              "example": 50
+            },
+            "amountToPay": {
+              "type": "number",
+              "format": "double",
+              "example": 100.00
+            },
+            "amountPaid": {
+              "type": "number",
+              "format": "double",
+              "example": 100.00,
+              "description": "Set this equal to amountToPay to mark as fully paid."
+            }
+          },
+          "required": [
+            "id"
+          ]
+        },
+        "Friend": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "integer",
+              "example": 2
+            },
+            "username": {
+              "type": "string",
+              "example": "alice"
+            },
+            "createdOn": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-03-29T10:30:00+05:00"
+            }
+          }
+        },
+        "FriendAccounts": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "integer",
+              "example": 2
+            },
+            "username": {
+              "type": "string",
+              "example": "alice"
+            },
+            "accounts": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Account"
+              }
+            }
+          }
+        },
+        "FriendRequest": {
+          "type": "object",
+          "properties": {
+            "userId": {
+              "type": "integer",
+              "example": 5
+            },
+            "username": {
+              "type": "string",
+              "example": "charlie"
+            },
+            "requestedOn": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2025-03-29T11:00:00+05:00"
+            }
+          }
+        },
+        "FriendRequestSend": {
+          "type": "object",
+          "properties": {
+            "friendIdentifier": {
+              "type": "string",
+              "example": "alice@example.com"
+            }
+          },
+          "required": [
+            "friendIdentifier"
+          ]
+        },
+        "FriendRequestResponse": {
+          "type": "object",
+          "properties": {
+            "action": {
+              "type": "string",
+              "enum": [
+                "accept",
+                "reject"
+              ],
+              "example": "accept"
+            }
+          },
+          "required": [
+            "action"
+          ]
+        },
+        "ErrorResponse": {
+          "type": "object",
+          "properties": {
+            "error": {
+              "type": "string",
+              "example": "Detailed error message explaining the issue"
+            }
+          }
+        }
+      },
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
+      }
+    }
+  }
+  
