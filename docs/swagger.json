@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
       "title": "FASTMoney API",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "description": "API documentation for FASTMoney: Finance Management in your Pocket. Bill splits are treated as transactions with an optional 'amounts' array that defines how the transaction is split among accounts/users."
     },
     "servers": [
