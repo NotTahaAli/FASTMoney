@@ -24,6 +24,33 @@
       }
     ],
     "paths": {
+      "/api": {
+        "get": {
+          "tags": [
+            "General"
+          ],
+          "summary": "API Health Check",
+          "description": "Check if the API is running.",
+          "responses": {
+            "200": {
+              "description": "API is running",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "type": "object",
+                    "properties": {
+                      "status": {
+                        "type": "string",
+                        "example": "API is running"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "/api/auth/register": {
         "post": {
           "tags": [
@@ -1481,11 +1508,6 @@
           "bearerFormat": "JWT"
         }
       }
-    },
-    "security": [
-      {
-        "bearerAuth": []
-      }
-    ]
+    }
   }
   
