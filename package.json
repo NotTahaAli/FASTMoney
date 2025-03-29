@@ -16,12 +16,16 @@
     }
   ],
   "scripts": {
+    "prebuild": "npm run migrate",
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "migrate": "tsx src/scripts/migrate.ts"
   },
   "dependencies": {
+    "dotenv": "^16.4.7",
+    "mssql": "^11.0.1",
     "next": "15.2.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
@@ -29,13 +33,15 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/mssql": "^9.1.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
-    "pre-commit": "^1.2.2",
+    "pre-commit": "^1.0.10",
     "tailwindcss": "^4",
+    "tsx": "^4.19.3",
     "typescript": "^5"
   },
   "pre-commit": [
