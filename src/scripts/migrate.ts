@@ -72,7 +72,7 @@ async function applyMigration(filename: string): Promise<boolean> {
                 if (batch.trim()) {
                     if (batch.endsWith('GO')) {
                         // Remove the trailing 'GO' if present
-                        batch = batch.slice(0, -2).trim();
+                        batch = batch.replace(/\s*GO\s*$/i, '').trim();
                     }
                     // Execute each batch of SQL commands
                     await executeQuery(batch, {}, tx);
