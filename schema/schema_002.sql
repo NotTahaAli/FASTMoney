@@ -1,6 +1,3 @@
-USE FASTMoney;
-GO
-
 -- Stop the script if the migration has already been applied
 IF EXISTS (SELECT *
 FROM Migration.Versions
