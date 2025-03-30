@@ -2,7 +2,7 @@
     "openapi": "3.0.0",
     "info": {
       "title": "FASTMoney API",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "description": "API documentation for FASTMoney: Finance Management in your Pocket. Bill splits are treated as transactions with an optional 'amounts' array that defines how the transaction is split among accounts/users."
     },
     "servers": [
@@ -79,8 +79,18 @@
                 }
               }
             },
-            "400": {
+            "409": {
               "description": "Username or email already exists",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/ErrorResponse"
+                  }
+                }
+              }
+            },
+            "400": {
+              "description": "Invalid input data",
               "content": {
                 "application/json": {
                   "schema": {
@@ -139,7 +149,7 @@
             "Authentication"
           ],
           "summary": "Change Password",
-          "description": "Allows an authenticated user to change their password.",
+          "description": "Allows an authenticated user to change their password. Returns Updated JWT.",
           "security": [
             {
               "bearerAuth": []
@@ -166,6 +176,10 @@
                       "message": {
                         "type": "string",
                         "example": "Password has been updated successfully"
+                      },
+                      "token": {
+                        "type": "string",
+                        "example": "<JWT_TOKEN>"
                       }
                     }
                   }
