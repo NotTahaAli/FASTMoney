@@ -1,19 +1,3 @@
--- Check that current DB is not master DB
-IF DB_NAME() = 'master'
-BEGIN
-    RAISERROR('This script should not be run on the master database', 16, 1);
-    RETURN;
-END
-
--- Create Migration Schema if it does not already exist
-IF NOT EXISTS (SELECT *
-FROM sys.schemas
-WHERE name = 'Migration')
-BEGIN
-    EXEC('CREATE SCHEMA Migration');
-END
-GO
-
 -- Create the Auth Schema if it does not already exist
 IF NOT EXISTS (SELECT *
 FROM sys.schemas
@@ -41,31 +25,6 @@ BEGIN
 END
 GO
 
--- Create the Migration Table if it does not already exist
-IF NOT EXISTS (SELECT *
-FROM sys.tables
-WHERE name = 'Versions' AND schema_id = SCHEMA_ID('Migration'))
-BEGIN
-    CREATE TABLE Migration.Versions
-    (
-        Id INT IDENTITY(1,1) PRIMARY KEY,
-        Version VARCHAR(255) NOT NULL,
-        AppliedOn DATETIME NOT NULL DEFAULT GETDATE()
-    );
-END
-GO
-
--- Stop the script if the migration has already been applied
-IF EXISTS (SELECT *
-FROM Migration.Versions
-WHERE Version = '001')
-BEGIN
-    RAISERROR('Version 001 has already been applied', 16, 1);
-    RETURN;
-END
-
--- Create a Transaction so it can be rolled back if an error occurs
-BEGIN TRANSACTION;
 -- Create the Users Table
 -- This table is used to store all the users of the application
 -- Each user has a username, password, email, and created date
@@ -187,13 +146,3 @@ CREATE TABLE Friends.FriendRequests
     CONSTRAINT FriendRequests_FK_Friends FOREIGN KEY (FriendId) REFERENCES Auth.Users(Id) ON DELETE NO ACTION,
     CONSTRAINT FriendRequests_Check_UserId_FriendId CHECK (UserId != FriendId)
 );
-
--- Add the initial migration record
-INSERT INTO Migration.Versions
-    (Version)
-VALUES
-    ('001');
-
-SELECT 'Version 001 applied successfully' AS 'Message';
-COMMIT TRANSACTION;
-GO

@@ -24,15 +24,19 @@
     "migrate": "tsx src/scripts/migrate.ts"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "dotenv": "^16.4.7",
+    "jose": "^6.0.10",
     "mssql": "^11.0.1",
     "next": "15.2.4",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/bcrypt": "^5.0.2",
     "@types/mssql": "^9.1.7",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -45,7 +49,6 @@
     "typescript": "^5"
   },
   "pre-commit": [
-    "lint",
     "build"
   ]
 }
