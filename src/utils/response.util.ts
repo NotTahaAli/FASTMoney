@@ -1,3 +1,5 @@
+import 'server-only';
+
 export function response(data: Record<string, unknown> | unknown[], statusCode: number, customHeaders: Record<string, string> = {}): Response {
     return new Response(JSON.stringify(data), {
         status: statusCode,

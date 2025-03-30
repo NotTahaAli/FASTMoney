@@ -11,6 +11,34 @@ interface MigrationVersion {
     AppliedOn: Date;
 }
 
+async function makeMigrationsTable() {
+    await executeQuery(`
+        IF NOT EXISTS (SELECT *
+        FROM sys.schemas
+        WHERE name = 'Migration')
+        BEGIN
+            EXEC('CREATE SCHEMA Migration');
+        END
+        
+        IF NOT EXISTS (SELECT *
+        FROM sys.tables
+        WHERE name = 'Versions' AND schema_id = SCHEMA_ID('Migration'))
+        BEGIN
+            CREATE TABLE Migration.Versions
+            (
+                Id INT IDENTITY(1,1) PRIMARY KEY,
+                Version VARCHAR(255) NOT NULL,
+                AppliedOn DATETIME NOT NULL DEFAULT GETDATE()
+            );
+        END`);
+}
+
+async function getDBName(): Promise<string[]> {
+    return (await executeQuery<{DBName: string}[]>(`
+        SELECT DB_NAME() AS DBName
+    `)).map(db => db.DBName);
+}
+
 /**
  * Get a list of all schema files in the schema directory
  * @returns {Promise<string[]>} List of schema files
@@ -40,14 +68,13 @@ async function getAppliedMigrations(): Promise<string[]> {
     // First check if the database exists and has the Migrations table
     try {
         const versions = await executeQuery<MigrationVersion[]>(`
-        SELECT Id, Version, AppliedOn 
-        FROM Migration.Versions 
-        ORDER BY Id ASC
-      `);
+            SELECT Id, Version, AppliedOn 
+            FROM Migration.Versions 
+            ORDER BY Id ASC
+        `);
         return versions.map(v => v.Version);
     } catch {
-        // If the query fails, it's likely because the database or table doesn't exist yet
-        console.log('Migration table not found. This might be the first migration.');
+        await makeMigrationsTable();
         return [];
     }
 }
@@ -57,12 +84,23 @@ async function getAppliedMigrations(): Promise<string[]> {
  * @param {string} filename The name of the migration file
  * @returns {Promise<boolean>} True if the migration was applied successfully, false otherwise
  */
-async function applyMigration(filename: string): Promise<boolean> {
+async function applyMigration(filename: string, appliedMigrations: string[]): Promise<boolean> {
     try {
         const filePath = path.join(SCHEMA_DIR, filename);
         const sql = await fs.promises.readFile(filePath, 'utf8');
 
+        const version = filename.match(/schema_(\d+)\.sql/)?.[1];
+        if (!version) {
+            console.error(`Invalid migration filename: ${filename}`);
+            return false;
+        }
+        if (appliedMigrations.includes(version)) {
+            console.log(`Migration ${filename} has already been applied`);
+            return true;
+        }
+
         console.log(`Applying migration ${filename}...`);
+
 
         const batches = sql.split(/[;\n]\s*GO\s*[\r\n]+/);
         const tx = await startTransaction();
@@ -79,6 +117,13 @@ async function applyMigration(filename: string): Promise<boolean> {
                     console.log(`Executed batch: ${++batchCount} of ${batches.length}, in ${filename}`);
                 }
             }
+            // Insert migration version into the database
+            await executeQuery(`
+                INSERT INTO Migration.Versions (Version)
+                VALUES (@version)
+            `, { version }, tx);
+            console.log(`Inserted migration version ${version} into database`);
+            appliedMigrations.push(version);
         } catch (error) {
             await rollbackTransaction(tx);
             throw error;
@@ -98,6 +143,12 @@ async function applyMigration(filename: string): Promise<boolean> {
  */
 async function runMigrations(): Promise<void> {
     try {
+        // Ensure Database is not master
+        if ((await getDBName())[0]?.toLowerCase() === 'master') {
+            console.error('Cannot run migrations on master database');
+            process.exit(1);
+        }
+
         const schemaFiles = await getSchemaFiles();
         console.log(`Found ${schemaFiles.length} schema files`);
 
@@ -119,7 +170,7 @@ async function runMigrations(): Promise<void> {
 
         // Apply migrations in sequence
         for (const migration of pendingMigrations) {
-            const success = await applyMigration(migration);
+            const success = await applyMigration(migration, appliedMigrations);
             if (!success) {
                 console.error(`Migration failed: ${migration}`);
                 process.exit(1);
