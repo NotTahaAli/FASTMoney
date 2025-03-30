@@ -16,6 +16,7 @@ export const customValidators = {
     dateString: z.string().datetime({offset: true, message: "Invalid date format"}),
     id: z.number().int("Id must be Integer").positive("Id must be positive"),
     idString: z.string().trim().regex(/^(?:[1-9]\d*)|(?:0\d+)$/).transform(Number),
+    jwt: z.string(),
 }
 
 export function validateObject<T extends object, U extends {[K in keyof T]: ZodTypeAny}>(

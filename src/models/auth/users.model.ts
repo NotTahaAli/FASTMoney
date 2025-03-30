@@ -1,8 +1,9 @@
 import db from '@/services/db.service';
 import bcrypt from 'bcrypt';
-import { createSession } from '@/utils/session.util';
 import { customValidators, validateObject } from '@/utils/validator.util';
 import { StatusError } from '@/middleware/errorHandler.middleware';
+import { decrypt, encrypt, refreshExpirationTime } from '@/utils/jwt.util';
+import { createSession, verifySession } from '@/utils/session.util';
 
 export interface IUser {
     Id: number;
@@ -33,13 +34,17 @@ export interface IChangePassword {
     newPassword: string;
 }
 
+export interface IUserRefresh {
+    refreshToken: string;
+}
+
 export class User {
     /**
      * Register a new user
      * @param userData User registration data
      * @returns Newly created user without password
      */
-    public static async register(userData: IUserRegistration): Promise<{ user: IUser, token: string }> {
+    public static async register(userData: IUserRegistration): Promise<{ user: IUser, token: string, refreshToken: string }> {
         // Check if username or email already exists
 
         const [success, credentialsOrErrors] = validateObject(userData, {
@@ -83,8 +88,9 @@ export class User {
         const user = result[0];
         console.log(user);
         const token = await createSession(user.Id, user.Username);
+        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
 
-        return { user, token };
+        return { user, token, refreshToken };
     }
 
     /**
@@ -92,7 +98,7 @@ export class User {
      * @param loginData Login data
      * @returns User without password and auth token if login successful
      */
-    public static async login(loginData: IUserLogin): Promise<{ user: IUser, token: string }> {
+    public static async login(loginData: IUserLogin): Promise<{ user: IUser, token: string, refreshToken: string }> {
         const [success, credentialsOrErrors] = validateObject(loginData, {
             usernameOrEmail: customValidators.username.or(customValidators.email),
             password: customValidators.password
@@ -136,11 +142,53 @@ export class User {
 
         // Generate auth token
         const token = await createSession(user.Id, user.Username);
+        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
 
         return {
             user: userWithoutPassword,
-            token
+            token,
+            refreshToken
         };
+    }
+
+    /**
+     * Refresh user session
+     * @param refreshData Refresh token data
+     * @returns User without password and new auth token if login successful
+     */
+    public static async refresh(refreshData: IUserRefresh): Promise<{ user: IUser, token: string }> {
+        const [success, credentialsOrErrors] = validateObject(refreshData, {
+            refreshToken: customValidators.jwt
+        });
+
+        if (!success) {
+            const error = credentialsOrErrors.errors[0];
+            throw new StatusError(error.path.join(".") + ": " + error.message, 401);
+        }
+
+        const { refreshToken } = credentialsOrErrors;
+
+        const payload = await decrypt(refreshToken);
+        if (!verifySession(payload)) {
+            throw new StatusError('Invalid refresh token', 401);
+        }
+        if (!payload.refresh) {
+            throw new StatusError('Invalid refresh token', 401);
+        }
+
+        // Get user without password
+        const user = await this.getUserById(payload.userId);
+        if (!user) {
+            throw new StatusError('User not found', 401);
+        }
+        if (Math.floor(user.ModifiedOn.getTime()/1000) > payload.iat) {
+            throw new StatusError('Refresh token expired', 401);
+        }
+
+        // Generate new auth token
+        const token = await createSession(user.Id, user.Username);
+
+        return { user, token };
     }
 
     /**
@@ -199,8 +247,9 @@ export class User {
         });
 
         const token = await createSession(userId, user.Username);
+        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
 
-        return token;
+        return [token, refreshToken];
     }
 
     /**

@@ -4,6 +4,7 @@ import { StatusError } from '@/middleware/errorHandler.middleware';
 
 const secretKey = process.env.JWT_SECRET;
 const expirationTime = process.env.JWT_EXPIRATION || '1d';
+export const refreshExpirationTime = process.env.REFRESH_TOKEN_EXPIRATION || '1m';
 
 if (!secretKey) {
     throw new StatusError('JWT_SECRET is not set', 500);
@@ -11,11 +12,11 @@ if (!secretKey) {
  
 const encodedKey = new TextEncoder().encode(secretKey)
  
-export async function encrypt(payload: Record<string, unknown>) {
+export async function encrypt(payload: Record<string, unknown>, exp: string = expirationTime) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
-    .setExpirationTime(expirationTime)
+    .setExpirationTime(exp)
     .sign(encodedKey)
 }
 

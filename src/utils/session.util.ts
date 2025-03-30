@@ -9,11 +9,11 @@ export type SessionPayload = {
     iat: number
 } & JWTPayload
 
-export async function createSession(userId: number, userName: string) {
-    return await encrypt({ userId, userName })
-  }
+export async function createSession(userId: number, userName: string, exp?: string) {
+    return await encrypt({ userId, userName }, exp)
+}
 
-function verifySession(payload: JWTPayload): payload is SessionPayload {
+export function verifySession(payload: JWTPayload): payload is SessionPayload {
     if (!payload) {
         throw new StatusError('Invalid payload', 401)
     }
