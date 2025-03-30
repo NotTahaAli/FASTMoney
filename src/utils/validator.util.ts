@@ -2,12 +2,13 @@ import { z, type ZodTypeAny } from "zod";
 
 export const customValidators = {
     email: z.string().email("Invalid email format"),
-    password: z.string().min(8, "Password must be at least 8 characters long")
+    password: z.string()
+        .min(8, "Password must be at least 8 characters long")
         .max(72, "Password must be at most 72 characters long")
-        .and(z.string().regex(/(?=.*[a-z])/, 'Password must contain at least one lowercase letter'))
-        .and(z.string().regex(/(?=.*[A-Z])/, 'Password must contain at least one uppercase letter'))
-        .and(z.string().regex(/(?=.*[0-9])/, 'Password must contain at least one number'))
-        .and(z.string().regex(/(?=.*[^a-zA-Z0-9 \n])/, 'Password must contain at least one special character')),
+        .regex(/(?=.*[a-z])/, 'Password must contain at least one lowercase letter')
+        .regex(/(?=.*[A-Z])/, 'Password must contain at least one uppercase letter')
+        .regex(/(?=.*[0-9])/, 'Password must contain at least one number')
+        .regex(/(?=.*[^a-zA-Z0-9 \n])/, 'Password must contain at least one special character'),
     username: z.string()
     .min(3, "Username must be at least 3 characters long")
     .max(255, "Username must be at most 255 characters long")
