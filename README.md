@@ -33,6 +33,7 @@ Financial Management in your Pocket. A full-stack application that allows users 
 - ✅ JWT authentication middleware
 - ✅ API response utilities
 - ✅ Input validation with Zod
+- ✅ Friend management system
 
 #### Frontend
 - ✅ Project structure and configuration
@@ -43,7 +44,6 @@ Financial Management in your Pocket. A full-stack application that allows users 
 #### Backend
 - ❌ Transaction management endpoints
 - ❌ Bill splitting functionality
-- ❌ Friend management system
 - ❌ Transaction tags implementation
 - ❌ Database indexes for performance optimization
 - ❌ Reporting functionality (Might be switched fully to frontend)
