@@ -776,36 +776,7 @@
         }
       }
     },
-    "/api/friends/accounts": {
-      "get": {
-        "tags": [
-          "Friend Management"
-        ],
-        "summary": "Get Friends' Accounts",
-        "description": "Retrieve the accounts of all the authenticated user's friends.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "List of friends with their accounts",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/FriendAccounts"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/friends/{friendId}/accounts": {
+    "/api/friends/{friendId}": {
       "get": {
         "tags": [
           "Friend Management"
@@ -841,6 +812,57 @@
           },
           "404": {
             "description": "Friend or accounts not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Friend Management"
+        ],
+        "summary": "Remove Friend",
+        "description": "Remove an existing friend from the authenticated user's friend list.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "friendId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "User ID of the friend to be removed"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Friend removed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Friend removed successfully"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Friend not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -983,59 +1005,6 @@
           },
           "400": {
             "description": "Invalid action",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorResponse"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/friends/{friendId}": {
-      "delete": {
-        "tags": [
-          "Friend Management"
-        ],
-        "summary": "Remove Friend",
-        "description": "Remove an existing friend from the authenticated user's friend list.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "friendId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer"
-            },
-            "description": "User ID of the friend to be removed"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Friend removed successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "message": {
-                      "type": "string",
-                      "example": "Friend removed successfully"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Friend not found",
             "content": {
               "application/json": {
                 "schema": {
