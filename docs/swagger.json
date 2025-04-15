@@ -487,10 +487,13 @@
             }
           },
           {
-            "name": "tag",
+            "name": "tags",
             "in": "query",
             "schema": {
-              "type": "string"
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             "description": "Filter transactions by tag"
           }
@@ -549,7 +552,7 @@
           "Transaction Management"
         ],
         "summary": "Edit Transaction",
-        "description": "Edit an existing transaction's details. Bill splits can be updated by modifying the 'amounts' array.",
+        "description": "Edit an existing transaction's details. Bill splits can be updated by modifying the 'amounts' array. Any AmountId that you do not put in the 'amounts' array will be deleted. Any amounts without Id in 'amounts' array will be added. If there are 0 remaining amounts, transaction will be deleted.",
         "security": [
           {
             "bearerAuth": []
