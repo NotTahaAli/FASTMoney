@@ -191,7 +191,8 @@ export class Transaction {
             sumOfAmountPaid += amount.amountPaid;
             sumOfAmountToPay += amount.amountToPay;
         }
-        if (sumOfAmountPaid != sumOfAmountToPay) {
+        const epsilon = 0.01; // Define a small tolerance value
+        if (Math.abs(sumOfAmountPaid - sumOfAmountToPay) > epsilon) {
             throw new StatusError('Sum of Amount Paid must equal the sum of Amount To Pay');
         }
         if (!hasSelfAmount) {
@@ -741,7 +742,8 @@ export class Transaction {
                         sumOfAmountPaid += amount.amountPaid;
                         sumOfAmountToPay += amount.amountToPay;
                     }
-                    if (sumOfAmountPaid != sumOfAmountToPay) {
+                    const epsilon = 0.01; // Define a small tolerance value
+                    if (Math.abs(sumOfAmountPaid - sumOfAmountToPay) > epsilon) {
                         throw new StatusError('Sum of Amount Paid must equal the sum of Amount To Pay');
                     }
                     if (!isIdAmount) {
