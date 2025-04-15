@@ -34,6 +34,9 @@ Financial Management in your Pocket. A full-stack application that allows users 
 - ✅ API response utilities
 - ✅ Input validation with Zod
 - ✅ Friend management system
+- ✅ Transaction management endpoints
+- ✅ Bill splitting functionality
+- ✅ Transaction tags implementation
 
 #### Frontend
 - ✅ Project structure and configuration
@@ -42,9 +45,6 @@ Financial Management in your Pocket. A full-stack application that allows users 
 ### Pending Implementation
 
 #### Backend
-- ❌ Transaction management endpoints
-- ❌ Bill splitting functionality
-- ❌ Transaction tags implementation
 - ❌ Database indexes for performance optimization
 - ❌ Reporting functionality (Might be switched fully to frontend)
 
