@@ -1,8 +1,9 @@
-import { IUser, User } from '@/models/auth/users.model';
+import { IUser, User } from '@/models/users.model';
 import { getSession } from "@/utils/session.util";
 import { StatusError } from './errorHandler.middleware';
+import { NextRequest } from 'next/server';
 
-export interface AuthenticatedRequest extends Request {
+export interface AuthenticatedRequest extends NextRequest {
   user: IUser;
 }
 
@@ -49,7 +50,7 @@ export async function authenticate(request: Request): Promise<AuthenticatedReque
 export function withAuth<T extends unknown[]>(
   handler: (req: AuthenticatedRequest, ...args: T) => Promise<Response> | Response
 ) {
-  return async (request: Request, ...args: T) => {
+  return async (request: Request | NextRequest, ...args: T) => {
     const authResult = await authenticate(request);
     
     if (authResult instanceof Response) {

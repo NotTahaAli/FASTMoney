@@ -1,4 +1,4 @@
-import { User } from "@/models/auth/users.model";
+import { User } from "@/models/users.model";
 import { withAuth } from "@/middleware/auth.middleware";
 import { withErrorHandling } from "@/middleware/errorHandler.middleware";
 import { response } from "@/utils/response.util";
