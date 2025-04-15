@@ -87,10 +87,13 @@ export interface IEditTransaction {
     includeInReports?: boolean;
     description?: string;
     notes?: string;
+    amounts?: IEditTransactionAmount[];
 }
 
 export interface IEditTransactionAmount {
-    id: number;
+    id?: number;
+    accountId?: number;
+    accountName?: string;
     amountToPay?: number;
     amountPaid?: number;
 }
@@ -160,6 +163,8 @@ export class Transaction {
 
         // Validate each amount
         let hasSelfAmount = false;
+        let sumOfAmountPaid = 0;
+        let sumOfAmountToPay = 0;
         for (const amount of amounts) {
             // Either accountId or accountName must be provided
             if (!amount.accountId && !amount.accountName) {
@@ -168,6 +173,7 @@ export class Transaction {
 
             // If accountId is provided, verify it exists and belongs to the user
             if (amount.accountId) {
+
                 if (amount.accountName) {
                     throw new StatusError('Both accountId and accountName cannot be provided for the same amount');
                 }
@@ -181,6 +187,12 @@ export class Transaction {
                     throw new StatusError(`You do not have access to account with ID ${amount.accountId}`);
                 }
             }
+
+            sumOfAmountPaid += amount.amountPaid;
+            sumOfAmountToPay += amount.amountToPay;
+        }
+        if (sumOfAmountPaid != sumOfAmountToPay) {
+            throw new StatusError('Sum of Amount Paid must equal the sum of Amount To Pay');
         }
         if (!hasSelfAmount) {
             throw new StatusError('At least one amount must have accountId set to the userId');
@@ -192,9 +204,19 @@ export class Transaction {
         try {
             // Insert the transaction record
             const insertTransactionQuery = `
+                DECLARE @output TABLE (
+                    Id BIGINT,
+                    Category NVARCHAR(255),
+                    IsIncome BIT,
+                    IncludeInReports BIT,
+                    Description NVARCHAR(255),
+                    Notes NVARCHAR(MAX),
+                    CreatedOn DATETIMEOFFSET(5)
+                );
                 INSERT INTO Finance.Transactions (Category, IsIncome, IncludeInReports, Description, Notes)
-                OUTPUT INSERTED.Id, INSERTED.Category, INSERTED.IsIncome, INSERTED.IncludeInReports, INSERTED.Description, INSERTED.Notes, INSERTED.CreatedOn
-                VALUES (@category, @isIncome, @includeInReports, @description, @notes)
+                OUTPUT INSERTED.Id, INSERTED.Category, INSERTED.IsIncome, INSERTED.IncludeInReports, INSERTED.Description, INSERTED.Notes, INSERTED.CreatedOn INTO @output
+                VALUES (@category, @isIncome, @includeInReports, @description, @notes);
+                SELECT * FROM @output;
             `;
 
             const transactionResult = await db.executeQuery<ITransactionSQL[]>(insertTransactionQuery, {
@@ -215,9 +237,19 @@ export class Transaction {
             // Insert each transaction amount
             for (const amount of amounts) {
                 const insertAmountQuery = `
+                    DECLARE @output TABLE (
+                        Id BIGINT,
+                        TransactionId BIGINT,
+                        AccountId BIGINT,
+                        AccountName NVARCHAR(255),
+                        AmountToPay DECIMAL(19, 4),
+                        AmountPaid DECIMAL(19, 4),
+                        CreatedOn DATETIMEOFFSET(5)
+                    );
                     INSERT INTO Finance.TransactionAmounts (TransactionId, AccountId, AccountName, AmountToPay, AmountPaid)
-                    OUTPUT INSERTED.Id, INSERTED.TransactionId, INSERTED.AccountId, INSERTED.AccountName, INSERTED.AmountToPay, INSERTED.AmountPaid, INSERTED.CreatedOn
-                    VALUES (@transactionId, @accountId, @accountName, @amountToPay, @amountPaid)
+                    OUTPUT INSERTED.Id, INSERTED.TransactionId, INSERTED.AccountId, INSERTED.AccountName, INSERTED.AmountToPay, INSERTED.AmountPaid, INSERTED.CreatedOn INTO @output
+                    VALUES (@transactionId, @accountId, @accountName, @amountToPay, @amountPaid);
+                    SELECT * FROM @output;
                 `;
 
                 const amountResult = await db.executeQuery<ITransactionAmountSQL[]>(insertAmountQuery, {
@@ -248,9 +280,19 @@ export class Transaction {
             if (tags && tags.length > 0) {
                 for (const tag of tags) {
                     const insertTagQuery = `
+                        DECLARE @output TABLE (
+                            Id BIGINT,
+                            TransactionId BIGINT,
+                            AccountId BIGINT,
+                            AccountName NVARCHAR(255),
+                            AmountToPay DECIMAL(19, 4),
+                            AmountPaid DECIMAL(19, 4),
+                            CreatedOn DATETIMEOFFSET(5)
+                        );
                         INSERT INTO Finance.TransactionTags (TransactionId, Tag)
-                        OUTPUT INSERTED.Id, INSERTED.TransactionId, INSERTED.Tag, INSERTED.CreatedOn
-                        VALUES (@transactionId, @tag)
+                        OUTPUT INSERTED.Id, INSERTED.TransactionId, INSERTED.Tag, INSERTED.CreatedOn INTO @output
+                        VALUES (@transactionId, @tag);
+                        SELECT * FROM @output;
                     `;
 
                     const tagResult = await db.executeQuery<ITransactionTagSQL[]>(insertTagQuery, {
@@ -291,6 +333,26 @@ export class Transaction {
         }
     }
 
+    private static async hasAccessToTransaction(userId: number, transactionId: number): Promise<boolean> {
+        // First, verify if the user has access to this transaction via their accounts
+        const hasAccessQuery = `
+            SELECT COUNT(*) as count
+            FROM Finance.TransactionAmounts ta
+            JOIN Finance.Accounts a ON ta.AccountId = a.Id
+            WHERE ta.TransactionId = @transactionId AND a.UserId = @userId
+        `;
+
+        const accessResult = await db.executeQuery<{ count: number }[]>(hasAccessQuery, {
+            transactionId,
+            userId
+        });
+
+        if (accessResult[0].count === 0) {
+            return false; // User doesn't have access or transaction doesn't exist
+        }
+        return true;
+    }
+
     /**
      * Get a transaction by ID
      * @param userId User ID requesting the transaction
@@ -313,21 +375,8 @@ export class Transaction {
 
         const { userId: validUserId, transactionId: validTransactionId } = validatedDataOrErrors;
 
-        // First, verify if the user has access to this transaction via their accounts
-        const hasAccessQuery = `
-            SELECT COUNT(*) as count
-            FROM Finance.TransactionAmounts ta
-            JOIN Finance.Accounts a ON ta.AccountId = a.Id
-            WHERE ta.TransactionId = @transactionId AND a.UserId = @userId
-        `;
-
-        const accessResult = await db.executeQuery<{ count: number }[]>(hasAccessQuery, {
-            transactionId: validTransactionId,
-            userId: validUserId
-        });
-
-        if (accessResult[0].count === 0) {
-            return null; // User doesn't have access or transaction doesn't exist
+        if (!await this.hasAccessToTransaction(validUserId, validTransactionId)) {
+            throw new StatusError('Transaction not found or you do not have access to it', 404);
         }
 
         // Get transaction details
@@ -407,9 +456,8 @@ export class Transaction {
     public static async updateTransaction(
         userId: number, 
         transactionId: number, 
-        updates: IEditTransaction, 
-        amountUpdates?: IEditTransactionAmount[]
-    ): Promise<ITransaction> {
+        updates: IEditTransaction
+    ): Promise<ITransaction | null> {
         const [success, validatedDataOrErrors] = validateObject({
             userId,
             transactionId,
@@ -424,18 +472,21 @@ export class Transaction {
             notes: customValidators.nonEmptyString.optional()
         });
 
+        const amountUpdates = updates.amounts;
+
         if (!success) {
             const error = validatedDataOrErrors.errors[0];
             throw new StatusError(error.path.join(".") + ": " + error.message);
         }
 
         const { 
+            userId: validUserId,
             transactionId: validTransactionId,
             ...validUpdates 
         } = validatedDataOrErrors;
 
         // Check if transaction exists and user has access to it
-        const transaction = await this.getTransactionById(userId, validTransactionId);
+        const transaction = await this.getTransactionById(validUserId, validTransactionId);
         if (!transaction) {
             throw new StatusError('Transaction not found or you do not have access to it', 404);
         }
@@ -495,8 +546,9 @@ export class Transaction {
                 }
             }
 
+            let deleted = false;
             // Update transaction amounts if provided
-            if (amountUpdates && amountUpdates.length > 0) {
+            if (amountUpdates) {
                 // Check which amounts to remove
                 const amountsToRemove = transaction.amounts.filter(a => !amountUpdates.some(u => u.id === a.id));
                 for (const amount of amountsToRemove) {
@@ -528,7 +580,7 @@ export class Transaction {
                         throw new StatusError(`Amount update ${error.path.join(".")}: ${error.message}`);
                     }
 
-                    if (!validatedAmtOrErrors.id) {
+                    if (!update.id) {
                         if (!validatedAmtOrErrors.accountId && !validatedAmtOrErrors.accountName) {
                             throw new StatusError('Either accountId or accountName must be provided for each amount update');
                         }
@@ -554,6 +606,7 @@ export class Transaction {
 
                         // Insert new amount
                         const insertAmountQuery = `
+                        
                             INSERT INTO Finance.TransactionAmounts (TransactionId, AccountId, AccountName, AmountToPay, AmountPaid)
                             OUTPUT INSERTED.Id, INSERTED.TransactionId, INSERTED.AccountId, INSERTED.AccountName, INSERTED.AmountToPay, INSERTED.AmountPaid, INSERTED.CreatedOn
                             VALUES (@transactionId, @accountId, @accountName, @amountToPay, @amountPaid)
@@ -665,6 +718,9 @@ export class Transaction {
                     }
                 }
                 if (transaction.amounts.length === 0) {
+                    if (Object.keys(validUpdates).length > 0) {
+                        throw new StatusError('Transaction cannot be deleted if it has updates');
+                    }
                     // Delete the transaction if no amounts left
                     const deleteTransactionQuery = `
                         DELETE FROM Finance.Transactions
@@ -673,13 +729,20 @@ export class Transaction {
                     await db.executeQuery(deleteTransactionQuery, {
                         transactionId: validTransactionId
                     }, tx);
+                    deleted = true;
                 } else {
                     let isIdAmount = false;
+                    let sumOfAmountPaid = 0;
+                    let sumOfAmountToPay = 0;
                     for (const amount of transaction.amounts) {
                         if (amount.accountId) {
                             isIdAmount = true;
-                            break;
                         }
+                        sumOfAmountPaid += amount.amountPaid;
+                        sumOfAmountToPay += amount.amountToPay;
+                    }
+                    if (sumOfAmountPaid != sumOfAmountToPay) {
+                        throw new StatusError('Sum of Amount Paid must equal the sum of Amount To Pay');
                     }
                     if (!isIdAmount) {
                         throw new StatusError('At least one amount must have accountId set');
@@ -689,6 +752,9 @@ export class Transaction {
 
             await commitTransaction(tx);
 
+            if (deleted) {
+                return null; // Transaction deleted
+            }
             // Return the updated transaction
             return await this.getTransactionById(userId, validTransactionId) as ITransaction;
         } catch (error) {
@@ -809,7 +875,7 @@ export class Transaction {
 
         // Get transactions with pagination
         const transactionsQuery = `
-            SELECT DISTINCT t.Id
+            SELECT DISTINCT t.Id, t.CreatedOn
             FROM Finance.Transactions t
             INNER JOIN Finance.TransactionAmounts ta ON t.Id = ta.TransactionId
             INNER JOIN Finance.Accounts a ON ta.AccountId = a.Id
