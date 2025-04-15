@@ -192,7 +192,7 @@ export class Transaction {
             sumOfAmountToPay += amount.amountToPay;
         }
         const epsilon = 0.01; // Define a small tolerance value
-        if (Math.abs(sumOfAmountPaid - sumOfAmountToPay) > epsilon) {
+        if (Math.abs(sumOfAmountPaid - sumOfAmountToPay) >= epsilon) {
             throw new StatusError('Sum of Amount Paid must equal the sum of Amount To Pay');
         }
         if (!hasSelfAmount) {
@@ -284,10 +284,7 @@ export class Transaction {
                         DECLARE @output TABLE (
                             Id BIGINT,
                             TransactionId BIGINT,
-                            AccountId BIGINT,
-                            AccountName NVARCHAR(255),
-                            AmountToPay DECIMAL(19, 4),
-                            AmountPaid DECIMAL(19, 4),
+                            Tag NVARCHAR(255),
                             CreatedOn DATETIMEOFFSET(5)
                         );
                         INSERT INTO Finance.TransactionTags (TransactionId, Tag)
@@ -598,10 +595,10 @@ export class Transaction {
                             }
                         }
 
-                        if (!validatedAmtOrErrors.amountPaid) {
+                        if (validatedAmtOrErrors.amountPaid === undefined) {
                             throw new StatusError('Amount paid must be provided for each new amount');
                         }
-                        if (!validatedAmtOrErrors.amountToPay) {
+                        if (validatedAmtOrErrors.amountToPay === undefined) {
                             throw new StatusError('Amount to pay must be provided for each new amount');
                         }
 
@@ -718,11 +715,14 @@ export class Transaction {
                         }
                     }
                 }
+                // Check if the transaction amounts array is empty
                 if (transaction.amounts.length === 0) {
+                    // Ensure no updates are provided when attempting to delete
                     if (Object.keys(validUpdates).length > 0) {
                         throw new StatusError('Transaction cannot be deleted if it has updates');
                     }
-                    // Delete the transaction if no amounts left
+
+                    // Proceed to delete the transaction as no amounts remain
                     const deleteTransactionQuery = `
                         DELETE FROM Finance.Transactions
                         WHERE Id = @transactionId
@@ -730,6 +730,8 @@ export class Transaction {
                     await db.executeQuery(deleteTransactionQuery, {
                         transactionId: validTransactionId
                     }, tx);
+
+                    // Mark the transaction as deleted
                     deleted = true;
                 } else {
                     let isIdAmount = false;
@@ -743,7 +745,7 @@ export class Transaction {
                         sumOfAmountToPay += amount.amountToPay;
                     }
                     const epsilon = 0.01; // Define a small tolerance value
-                    if (Math.abs(sumOfAmountPaid - sumOfAmountToPay) > epsilon) {
+                    if (Math.abs(sumOfAmountPaid - sumOfAmountToPay) >= epsilon) {
                         throw new StatusError('Sum of Amount Paid must equal the sum of Amount To Pay');
                     }
                     if (!isIdAmount) {
@@ -938,9 +940,9 @@ export class Transaction {
             throw new StatusError('Transaction not found or you do not have access to it', 404);
         }
 
-        // Check if tag already exists
-        if (transaction.tags && transaction.tags.some(t => t.tag.toLowerCase() === tag.toLowerCase())) {
-            throw new StatusError(`Tag "${tag}" already exists for this transaction`, 400);
+        // Check if the tag already exists for this transaction
+        if (transaction.tags && transaction.tags.some(t => t.tag.trim().toLowerCase() === tag.trim().toLowerCase())) {
+            throw new StatusError('Tag already exists for this transaction.', 404);
         }
 
         // Add the tag
