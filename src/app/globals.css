@@ -19,8 +19,36 @@
   }
 }
 
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Custom cursor styles */
+* {
+  cursor: url('/cursors/custom.png') 0 0, auto;
+  transition: cursor 0.2s ease;
+}
+
+a, button, [role="button"], input[type="submit"], .clickable {
+  cursor: url('/cursors/pointer.png') 6 0, pointer;
+}
+
+/* Add if you want to disable default cursor outlines */
+* {
+  outline: none;
+}
+
+input[type="text"], input[type="password"], input[type="email"], textarea {
+  cursor: url('/cursors/text.png'), text !important;
 }
