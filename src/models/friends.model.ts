@@ -61,11 +61,18 @@ export class Friend {
         const { userId: validUserId } = validatedDataOrErrors;
 
         const query = `
+            SELECT * FROM (
             SELECT f.UserId, f.FriendId, u.Username, f.CreatedOn
             FROM Friends.Friends f
             JOIN Auth.Users u ON f.FriendId = u.Id
             WHERE f.UserId = @userId
-            ORDER BY f.CreatedOn DESC
+            UNION
+            SELECT f.UserId, f.FriendId, u.Username, f.CreatedOn
+            FROM Friends.Friends f
+            JOIN Auth.Users u ON f.UserId = u.Id
+            WHERE f.FriendId = @userId
+            ) fr
+            ORDER BY fr.CreatedOn DESC
         `;
 
         const result = await db.executeQuery<IFriendSQL[]>(query, { userId: validUserId });
