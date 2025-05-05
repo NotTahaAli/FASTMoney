@@ -1,86 +1,100 @@
 'use client';
 
+import { FormEvent, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 import Navigation from '@/components/Navigation';
-import Image from 'next/image';
 
-interface UserProfile {
+interface AccountSettingsForm {
   username: string;
   email: string;
-  profilePicture?: string;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
-export default function ProfilePage() {
+export default function AccountSettings() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string>('');
-
-  const fetchUserProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
-      // Parse JWT token to get user info
-      const [, payloadBase64] = token.split('.');
-      const payload = JSON.parse(atob(payloadBase64));
-      
-      setUserProfile({
-        username: payload.Username || payload.username || '',
-        email: payload.Email || payload.email || '',
-        profilePicture: '/default-avatar.png'
-      });
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      router.push('/login');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const [activeForm, setActiveForm] = useState<'username' | 'email' | 'password' | null>(null);
+  const [formData, setFormData] = useState<AccountSettingsForm>({
+    username: '',
+    email: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
     } else {
-      fetchUserProfile();
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (!payload.userName || !payload.email) {
+          throw new Error('Invalid token payload');
+        }
+        setFormData(prev => ({
+          ...prev,
+          username: payload.userName,
+          email: payload.email
+        }));
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error parsing token:', error);
+        // refresh token or redirect to login
+        fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        })
+        router.push('/login');
+      }
     }
   }, [router]);
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setImageFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
-    }
-  };
-
-  const handleUpdateProfile = async () => {
-    if (!imageFile) return;
-
-    const formData = new FormData();
-    formData.append('profilePicture', imageFile);
+  const handleSubmit = async (e: FormEvent, type: 'password') => {
+    e.preventDefault();
+    setMessage({ type: '', text: '' });
 
     try {
-      const response = await fetch('/api/profile/picture', {
-        method: 'POST',
+      const endpoint = `/api/auth/${type == 'password' ? 'change-password' : type}`;
+      const response = await fetch(endpoint, {
+        method: 'PUT',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
-        body: formData
+        body: JSON.stringify(
+          type === 'password' 
+            ? { 
+                currentPassword: formData.currentPassword,
+                newPassword: formData.newPassword 
+              }
+            : { [type]: formData[type] }
+        ),
       });
 
-      if (response.ok) {
-        // Refresh user profile
-        fetchUserProfile();
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || `Failed to update ${type}`);
+      }
+
+      setMessage({ type: 'success', text: `${type} updated successfully` });
+      setActiveForm(null);
+      
+      // Update token if provided
+      if (data.token) {
+        localStorage.setItem('token', data.token);
       }
     } catch (error) {
-      console.error('Error updating profile picture:', error);
+      setMessage({ 
+        type: 'error', 
+        text: error instanceof Error ? error.message : `Failed to update ${type}` 
+      });
     }
   };
 
@@ -92,68 +106,84 @@ export default function ProfilePage() {
     <>
       <main className="min-h-screen p-4 pt-24 md:p-8 md:pt-28">
         <div className="max-w-screen-xl mx-auto">
-          {/* Profile Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+          <div className="max-w-2xl mx-auto">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-              Profile
+              Account Settings
             </h1>
 
-            {/* Info Boxes Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              {/* Username Box */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Username
-                </label>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {userProfile?.username}
-                </p>
+            <div className="space-y-6">
+              {/* Username Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Username</h2>
+                    <p className="text-gray-500 dark:text-gray-400">{formData.username}</p>
+                  </div>
+                </div>
               </div>
 
-              {/* Email Box */}
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                  Email
-                </label>
-                <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {userProfile?.email}
-                </p>
+              {/* Email Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Email</h2>
+                    <p className="text-gray-500 dark:text-gray-400">{formData.email}</p>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {/* Profile Picture Section */}
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative w-32 h-32 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700">
-                <Image
-                  src={previewUrl || (userProfile?.profilePicture || '/default-avatar.png')}
-                  alt="Profile"
-                  fill
-                  className="object-cover"
-                />
-              </div>
-              <div className="flex flex-col items-center space-y-2">
-                <label
-                  htmlFor="profile-picture"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg cursor-pointer hover:bg-blue-700"
-                >
-                  Change Picture
-                </label>
-                <input
-                  id="profile-picture"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleImageChange}
-                />
-                {imageFile && (
+              {/* Password Section */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Password</h2>
+                    <p className="text-gray-500 dark:text-gray-400">••••••••</p>
+                  </div>
                   <button
-                    onClick={handleUpdateProfile}
-                    className="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400"
+                    onClick={() => setActiveForm(activeForm === 'password' ? null : 'password')}
+                    className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
                   >
-                    Save Picture
+                    Change
                   </button>
+                </div>
+                {activeForm === 'password' && (
+                  <form onSubmit={(e) => handleSubmit(e, 'password')} className="space-y-4">
+                    <input
+                      type="password"
+                      value={formData.currentPassword}
+                      onChange={(e) => setFormData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      placeholder="Current password"
+                      required
+                    />
+                    <input
+                      type="password"
+                      value={formData.newPassword}
+                      onChange={(e) => setFormData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      className="w-full px-3 py-2 border rounded-lg dark:border-gray-700 dark:bg-gray-700 dark:text-white"
+                      placeholder="New password"
+                      required
+                    />
+                    <button
+                      type="submit"
+                      className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                      Update Password
+                    </button>
+                  </form>
                 )}
               </div>
+
+              {/* Message Display */}
+              {message.text && (
+                <div className={`p-4 rounded-lg ${
+                  message.type === 'success' 
+                    ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400'
+                }`}>
+                  {message.text}
+                </div>
+              )}
             </div>
           </div>
         </div>

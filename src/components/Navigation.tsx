@@ -38,13 +38,45 @@ export default function Navigation() {
       try {
         const [, payloadBase64] = token.split('.');
         const payload = JSON.parse(atob(payloadBase64));
-        setUsername(payload.username || payload.Username || 'User');
+        if (payload.exp * 1000 < Date.now()) {
+          throw new Error('Token expired');
+        }
+        if (!payload.userName || !payload.email) {
+          throw new Error('Invalid token payload');
+        }
+        setUsername(payload.userName || 'User');
       } catch (error) {
         console.error('Error parsing token:', error);
-        setUsername('User');
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          fetch('/api/auth/refresh', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refreshToken })
+          }).then(response => {
+            if (response.ok) {
+              return response.json();
+            }
+            throw new Error('Failed to refresh token');
+          }).then(data => {
+            localStorage.setItem('token', data.token);
+            const newPayload = JSON.parse(atob(data.token.split('.')[1]));
+            setUsername(newPayload.userName || 'User');
+          }).catch(() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            router.push('/login');
+          });
+        } else {
+          router.push('/login');
+        }
       }
+    } else {
+      router.push('/login');
     }
-  }, []);
+  }, [router]);
 
   const handleHelpClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -115,12 +147,6 @@ export default function Navigation() {
                     className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
                     Profile
-                  </Link>
-                  <Link
-                    href="/accounts"
-                    className="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                  >
-                    Accounts
                   </Link>
                   <button
                     onClick={handleHelpClick}

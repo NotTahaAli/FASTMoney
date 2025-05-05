@@ -87,7 +87,7 @@ export class User {
 
         const user = result[0];
         console.log(user);
-        const token = await createSession(user.Id, user.Username);
+        const token = await createSession(user.Id, user.Username, user.Email);
         const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
 
         return { user, token, refreshToken };
@@ -141,7 +141,7 @@ export class User {
         const { Password: _, ...userWithoutPassword } = user;
 
         // Generate auth token
-        const token = await createSession(user.Id, user.Username);
+        const token = await createSession(user.Id, user.Username, user.Email);
         const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
 
         return {
@@ -186,7 +186,7 @@ export class User {
         }
 
         // Generate new auth token
-        const token = await createSession(user.Id, user.Username);
+        const token = await createSession(user.Id, user.Username, user.Email);
 
         return { user, token };
     }
@@ -214,12 +214,12 @@ export class User {
 
         // Get user with password
         const query = `
-            SELECT Id, Username, Password
+            SELECT Id, Username, Email, Password
             FROM Auth.Users
             WHERE Id = @userId
         `;
 
-        const users = await db.executeQuery<{ Id: number, Username: string, Password: Buffer }[]>(query, { userId });
+        const users = await db.executeQuery<{ Id: number, Username: string, Email: string, Password: Buffer }[]>(query, { userId });
 
         if (!users || users.length === 0) {
             throw new StatusError('User not found', 404);
@@ -246,7 +246,7 @@ export class User {
             NewPassword: Buffer.from(newPasswordHash)
         });
 
-        const token = await createSession(userId, user.Username);
+        const token = await createSession(userId, user.Username, user.Email);
         const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
 
         return [token, refreshToken];
