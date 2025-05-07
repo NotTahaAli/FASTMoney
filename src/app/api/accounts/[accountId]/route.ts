@@ -3,6 +3,21 @@ import { StatusError, withErrorHandling } from "@/middleware/errorHandler.middle
 import { Account, IEditAccount } from "@/models/accounts.model";
 import { response } from "@/utils/response.util";
 
+export const GET = withErrorHandling(withAuth(async (req,
+    {params}: { params: Promise<{ accountId: string }>}
+)=>{
+    const {accountId} = await params;
+    const numericAccountId = parseInt(accountId);
+    if (isNaN(numericAccountId)) {
+        throw new StatusError('Account ID must be a number', 400);
+    }
+    const account = await Account.getAccount(req.user.Id, numericAccountId);
+    if (!account) {
+        throw new StatusError('Account not found', 404);
+    }
+    return response(account, 200);
+}));
+
 export const PUT = withErrorHandling(withAuth(async (req,
     {params}: { params: Promise<{ accountId: string }>}
 )=>{

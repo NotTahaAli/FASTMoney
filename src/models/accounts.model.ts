@@ -72,6 +72,58 @@ export class Account {
     }
 
     /**
+     * Get account from Id
+     * @param accountId The account ID to retrieve
+     * @param userId The user ID to retrieve accounts from
+     * @returns Account details or null if not found
+     */
+    public static async getAccount(userId: number, accountId: number): Promise<IAccount | null> {
+        const [success, validatedDataOrErrors] = validateObject({
+            userId,
+            accountId
+        }, {
+            userId: customValidators.id,
+            accountId: customValidators.id
+        });
+
+        if (!success) {
+            const error = validatedDataOrErrors.errors[0];
+            throw new StatusError(error.path.join(".") + ": " + error.message);
+        }
+
+        const { userId: validUserId, accountId: validAccountId } = validatedDataOrErrors;
+
+        const query = `
+            SELECT Id, UserId, Name, Balance, CreatedOn
+            FROM Finance.Accounts
+            WHERE Id = @accountId AND (
+                UserId = @userId
+                OR UserId IN (SELECT FriendId FROM Friends.Friends WHERE UserId = @userId)
+                OR UserId IN (SELECT UserId FROM Friends.Friends WHERE FriendId = @userId)
+            )
+        `;
+
+        const result = await db.executeQuery<IAccountSQL[]>(query, {
+            userId: validUserId,
+            accountId: validAccountId
+        });
+
+        if (!result || result.length === 0) {
+            return null;
+        }
+
+        if (result[0].UserId !== validUserId) {
+            result[0].Balance = NaN;
+            result[0].CreatedOn = new Date(0);
+        }
+
+        return {
+            ...result[0],
+            Id: parseInt(result[0].Id)
+        };
+    }
+
+    /**
      * Get all accounts for a specific user
      * @param userId The user ID to retrieve accounts for
      * @returns Array of user accounts
