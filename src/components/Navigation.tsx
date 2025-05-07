@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { getAccountDetails } from '@/middleware/clientAuth.middleware';
 
 export default function Navigation() {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -33,49 +34,13 @@ export default function Navigation() {
   }, []);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        const [, payloadBase64] = token.split('.');
-        const payload = JSON.parse(atob(payloadBase64));
-        if (payload.exp * 1000 < Date.now()) {
-          throw new Error('Token expired');
-        }
-        if (!payload.userName || !payload.email) {
-          throw new Error('Invalid token payload');
-        }
-        setUsername(payload.userName || 'User');
-      } catch (error) {
-        console.error('Error parsing token:', error);
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          fetch('/api/auth/refresh', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ refreshToken })
-          }).then(response => {
-            if (response.ok) {
-              return response.json();
-            }
-            throw new Error('Failed to refresh token');
-          }).then(data => {
-            localStorage.setItem('token', data.token);
-            const newPayload = JSON.parse(atob(data.token.split('.')[1]));
-            setUsername(newPayload.userName || 'User');
-          }).catch(() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-            router.push('/login');
-          });
-        } else {
-          router.push('/login');
-        }
+    getAccountDetails().then((account) => {
+      if (account) {
+        setUsername(account.userName || 'User');
+      } else {
+        router.push('/login');
       }
-    } else {
-      router.push('/login');
-    }
+    });
   }, [router]);
 
   const handleHelpClick = (e: React.MouseEvent) => {

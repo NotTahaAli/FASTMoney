@@ -3,6 +3,7 @@
 import { FormEvent, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navigation from '@/components/Navigation';
+import { getAccountDetails } from '@/middleware/clientAuth.middleware';
 
 interface AccountSettingsForm {
   username: string;
@@ -26,33 +27,18 @@ export default function AccountSettings() {
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-    } else {
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (!payload.userName || !payload.email) {
-          throw new Error('Invalid token payload');
-        }
+    getAccountDetails().then((account) => {
+      if (!account) {
+        router.push('/login');
+      } else {
         setFormData(prev => ({
           ...prev,
-          username: payload.userName,
-          email: payload.email
+          username: account.userName,
+          email: account.email
         }));
         setIsLoading(false);
-      } catch (error) {
-        console.error('Error parsing token:', error);
-        // refresh token or redirect to login
-        fetch('/api/auth/refresh', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          }
-        })
-        router.push('/login');
       }
-    }
+    });
   }, [router]);
 
   const handleSubmit = async (e: FormEvent, type: 'password') => {

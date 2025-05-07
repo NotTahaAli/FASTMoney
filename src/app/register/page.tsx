@@ -3,6 +3,7 @@
 import { FormEvent, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getAccountDetails } from '@/middleware/clientAuth.middleware';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,10 +17,11 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      router.push('/');
-    }
+    getAccountDetails().then((account) => {
+      if (account) {
+        router.push('/');
+      }
+    });
   }, [router]);
 
   const handleSubmit = async (e: FormEvent) => {

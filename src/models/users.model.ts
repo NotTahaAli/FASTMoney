@@ -88,7 +88,7 @@ export class User {
         const user = result[0];
         console.log(user);
         const token = await createSession(user.Id, user.Username, user.Email);
-        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
+        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, email: user.Email, refresh: true}, refreshExpirationTime);
 
         return { user, token, refreshToken };
     }
@@ -142,7 +142,7 @@ export class User {
 
         // Generate auth token
         const token = await createSession(user.Id, user.Username, user.Email);
-        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
+        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, email: user.Email, refresh: true}, refreshExpirationTime);
 
         return {
             user: userWithoutPassword,
@@ -247,7 +247,7 @@ export class User {
         });
 
         const token = await createSession(userId, user.Username, user.Email);
-        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, refresh: true}, refreshExpirationTime);
+        const refreshToken = await encrypt({userId: user.Id, userName: user.Username, email: user.Email, refresh: true}, refreshExpirationTime);
 
         return [token, refreshToken];
     }
