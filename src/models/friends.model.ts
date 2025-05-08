@@ -31,9 +31,9 @@ export interface IFriendRequestResponse {
 }
 
 export interface IFriendAccount {
-    id: number;
-    name: string;
-    createdOn: Date;
+    Id: number;
+    Name: string;
+    CreatedOn: Date;
 }
 
 export interface IFriendAccounts {
@@ -61,11 +61,18 @@ export class Friend {
         const { userId: validUserId } = validatedDataOrErrors;
 
         const query = `
-            SELECT f.UserId, f.FriendId, u.Username, f.CreatedOn
+            SELECT * FROM (
+            SELECT f.FriendId, u.Username, f.CreatedOn
             FROM Friends.Friends f
             JOIN Auth.Users u ON f.FriendId = u.Id
             WHERE f.UserId = @userId
-            ORDER BY f.CreatedOn DESC
+            UNION
+            SELECT f.UserId, u.Username, f.CreatedOn
+            FROM Friends.Friends f
+            JOIN Auth.Users u ON f.UserId = u.Id
+            WHERE f.FriendId = @userId
+            ) fr
+            ORDER BY fr.CreatedOn DESC
         `;
 
         const result = await db.executeQuery<IFriendSQL[]>(query, { userId: validUserId });
@@ -368,9 +375,9 @@ export class Friend {
             userId: validFriendId,
             username: usernameResult[0].Username,
             accounts: accountsResult.map(account => ({
-                id: parseInt(account.Id),
-                name: account.Name,
-                createdOn: account.CreatedOn
+                Id: parseInt(account.Id),
+                Name: account.Name,
+                CreatedOn: account.CreatedOn
             }))
         };
     }
@@ -402,6 +409,7 @@ export class Friend {
             SELECT COUNT(*) as count
             FROM Friends.Friends
             WHERE UserId = @userId AND FriendId = @friendId
+            OR UserId = @friendId AND FriendId = @userId
         `;
 
         const checkFriendshipResult = await db.executeQuery<{ count: number }[]>(checkFriendshipQuery, { 
