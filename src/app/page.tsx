@@ -453,7 +453,7 @@ export default function Home() {
             accountNamesMap[account.Id] = account.Name;
             userNamesMap[account.UserId] = acc.userName;
             accountOwnersMap[account.Id] = account.UserId;
-            if (account.Balance) {
+            if (account.Balance !== null && account.Balance !== undefined) {
               balance += account.Balance;
             }
             if (account.UserId !== userId) {
