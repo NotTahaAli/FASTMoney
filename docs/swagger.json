@@ -317,6 +317,51 @@
       }
     },
     "/api/accounts/{accountId}": {
+      "get": {
+        "tags": [
+          "Account Management"
+        ],
+        "summary": "Get Account Details",
+        "description": "Retrieve details of a specific account. (Must be your Account or Friends, If Friends CreationDate and Balance are hidden)",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "accountId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID of the account to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Account details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Account not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
       "put": {
         "tags": [
           "Account Management"
@@ -1140,20 +1185,24 @@
       "Account": {
         "type": "object",
         "properties": {
-          "id": {
+          "Id": {
             "type": "integer",
             "example": 10
           },
-          "name": {
+          "UserId": {
+            "type": "integer",
+            "example": 1
+          },
+          "Name": {
             "type": "string",
             "example": "Checking"
           },
-          "balance": {
+          "Balance": {
             "type": "number",
             "format": "double",
             "example": 2500.75
           },
-          "createdOn": {
+          "CreatedOn": {
             "type": "string",
             "format": "date-time",
             "example": "2025-03-29T10:05:00+05:00"
@@ -1191,15 +1240,7 @@
       },
       "AccountResponse": {
         "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "example": "Account created successfully"
-          },
-          "account": {
-            "$ref": "#/components/schemas/Account"
-          }
-        }
+        "$ref": "#/components/schemas/Account"
       },
       "Transaction": {
         "type": "object",

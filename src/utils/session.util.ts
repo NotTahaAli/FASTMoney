@@ -5,12 +5,13 @@ import { JWTPayload } from "jose";
 export type SessionPayload = {
     userId: number,
     userName: string,
+    email: string,
     exp: number,
     iat: number
 } & JWTPayload
 
-export async function createSession(userId: number, userName: string, exp?: string) {
-    return await encrypt({ userId, userName }, exp)
+export async function createSession(userId: number, userName: string, email: string, exp?: string) {
+    return await encrypt({ userId, userName, email }, exp)
 }
 
 export function verifySession(payload: JWTPayload): payload is SessionPayload {
@@ -22,6 +23,9 @@ export function verifySession(payload: JWTPayload): payload is SessionPayload {
     }
     if (typeof payload.userId !== 'number' || typeof payload.userName !== 'string') {
         throw new StatusError('Missing required fields in payload', 401)
+    }
+    if (typeof payload.email !== 'string') {
+        throw new StatusError('Missing email in payload', 401)
     }
     if (payload.userId <= 0) {
         throw new StatusError('Invalid userId in payload', 401)

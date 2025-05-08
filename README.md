@@ -41,6 +41,14 @@ Financial Management in your Pocket. A full-stack application that allows users 
 #### Frontend
 - ✅ Project structure and configuration
 - ✅ Tailwind CSS setup
+- ✅ Basic layout components
+- ✅ Authentication UI (login, register, password change)
+- ✅ Dashboard/home page
+- ✅ Account management UI
+- ✅ Transaction creation
+- ✅ Bill splitting UI
+- ✅ Friend management UI
+- ✅ Mobile-responsive design
 
 ### Pending Implementation
 
@@ -49,15 +57,9 @@ Financial Management in your Pocket. A full-stack application that allows users 
 - ❌ Reporting functionality (Might be switched fully to frontend)
 
 #### Frontend
-- ❌ Basic layout components
-- ❌ Authentication UI (login, register, password change)
-- ❌ Dashboard/home page
-- ❌ Account management UI
-- ❌ Transaction creation and management
-- ❌ Bill splitting UI
-- ❌ Friend management UI
+- ❌ Transaction management
+- ❌ Loan Information
 - ❌ Reports and analytics
-- ❌ Mobile-responsive design
 - ❌ Dark/light mode toggle
 
 ## 🚦 Getting Started
