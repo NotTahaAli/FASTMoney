@@ -1240,15 +1240,7 @@
       },
       "AccountResponse": {
         "type": "object",
-        "properties": {
-          "message": {
-            "type": "string",
-            "example": "Account created successfully"
-          },
-          "account": {
-            "$ref": "#/components/schemas/Account"
-          }
-        }
+        "$ref": "#/components/schemas/Account"
       },
       "Transaction": {
         "type": "object",
