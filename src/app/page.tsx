@@ -43,12 +43,13 @@ export default function Home() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [accounts, setAccounts] = useState<APIAccount[]>([]); // State to hold account data
   const [error, setError] = useState<string | null>(null);
+  const [balance, setBalance] = useState(0);
   const [transactionSettings, setTransactionSettings] = useState<{
     limit: number;
     page: number;
     totalPages: number;
   }>({
-    limit: 2,
+    limit: 5,
     page: 1,
     totalPages: 1,
   });
@@ -446,15 +447,20 @@ export default function Home() {
           const accountNamesMap: { [key: number]: string } = accountNames;
           const userNamesMap: { [key: number]: string } = userNames;
           const accountOwnersMap: { [key: number]: number } = accountOwners;
+          let balance = 0;
           let userId: number | null = null;
           accountsData.forEach((account: APIAccount) => {
             accountNamesMap[account.Id] = account.Name;
             userNamesMap[account.UserId] = acc.userName;
             accountOwnersMap[account.Id] = account.UserId;
+            if (account.Balance !== null && account.Balance !== undefined) {
+              balance += account.Balance;
+            }
             if (account.UserId !== userId) {
               userId = account.UserId;
             }
           });
+          setBalance(balance);
           setAccountNames(accountNamesMap);
           setUserNames(userNamesMap);
           setAccountOwners(accountOwnersMap);
@@ -516,7 +522,7 @@ export default function Home() {
               Total Balance
             </p>
             <h2 className="text-3xl font-bold text-gray-900 dark:text-white mt-1">
-              Rs. 25,000.00{" "}
+              Rs. {balance.toLocaleString("en-PK")}{" "}
               {/* This will eventually be calculated from accounts */}
             </h2>
           </div>

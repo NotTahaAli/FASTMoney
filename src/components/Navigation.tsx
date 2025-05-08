@@ -385,7 +385,7 @@ export default function Navigation() {
       title: "Success",
       text: "Transaction created successfully.",
     });
-    router.refresh();
+    location.reload();
   };
 
   useEffect(() => {
