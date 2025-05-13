@@ -1,0 +1,5 @@
+ALTER TABLE Finance.TransactionAmounts
+DROP CONSTRAINT TransactionAmounts_Uniq_TransactionId_AccountId;
+
+ALTER TABLE Finance.TransactionAmounts
+ADD CONSTRAINT TransactionAmounts_Uniq_TransactionId_AccountId_AccountName UNIQUE (TransactionId, AccountId, AccountName);
